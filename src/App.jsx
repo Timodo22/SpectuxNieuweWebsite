@@ -9,6 +9,25 @@ import FPSCamera from "./ScrollCamera";
 import AutoSpotLights from "./AutoSpotLights";
 
 // =========================================
+// 0. GLOBALE STIJLEN (Tegen stuiteren/zoomen)
+// =========================================
+const GlobalStyles = () => (
+  <style>{`
+    html, body, #root {
+      margin: 0;
+      padding: 0;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      overscroll-behavior: none; /* Stopt pull-to-refresh op Chrome/Safari */
+      touch-action: none;        /* Stopt browser gestures */
+      user-select: none;         /* Stopt tekst selecteren */
+      -webkit-user-select: none;
+    }
+  `}</style>
+);
+
+// =========================================
 // 1. DATA
 // =========================================
 const PAINTING_DATA = {
@@ -41,7 +60,8 @@ function InstructionOverlay({ isVisible, isMobile }) {
       background: "rgba(0, 0, 0, 0.6)", color: "white", padding: "15px 25px",
       borderRadius: "30px", fontFamily: "sans-serif", textAlign: "center",
       opacity: isVisible ? 1 : 0, transition: "opacity 0.5s ease",
-      pointerEvents: "none", zIndex: 20, width: isMobile ? "80%" : "auto"
+      pointerEvents: "none", zIndex: 20, width: isMobile ? "80%" : "auto",
+      touchAction: "none" // Belangrijk
     }}>
       <h3 style={{ margin: "0 0 5px 0", fontSize: "16px", color: "#ffae00" }}>Welkom in het Museum</h3>
       <p style={{ margin: 0, fontSize: "14px" }}>
@@ -49,14 +69,11 @@ function InstructionOverlay({ isVisible, isMobile }) {
           ? "Gebruik de LINKER joystick om te lopen. Sleep RECHTS om te kijken."
           : "Gebruik W A S D om rond te lopen en je MUIS om rond te kijken."}
       </p>
-      <p style={{ margin: "5px 0 0 0", fontSize: "12px", color: "#ccc" }}>
-        <i>Tip: Ga naar een schilderij om informatie te bekijken!</i>
-      </p>
     </div>
   );
 }
 
-// --- B. Rotate Device Overlay (voor portrait mode) ---
+// --- B. Rotate Device Overlay (AANGEPAST: Kleiner) ---
 function RotateDeviceOverlay({ isVisible }) {
   if (!isVisible) return null;
   return (
@@ -64,11 +81,14 @@ function RotateDeviceOverlay({ isVisible }) {
       position: "fixed", top: 0, left: 0, width: "100vw", height: "100vh",
       background: "#111", color: "white", zIndex: 9999,
       display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center",
-      fontFamily: "sans-serif", textAlign: "center", padding: "20px"
+      fontFamily: "sans-serif", textAlign: "center", padding: "20px",
+      touchAction: "none" // Blokkeer interacties hier ook
     }}>
-      <div style={{ fontSize: "60px", marginBottom: "20px" }}>📱 ➔ 🔄</div>
-      <h2>Draai je apparaat</h2>
-      <p>Voor de beste ervaring, draai je telefoon of tablet 90 graden (Landscape).</p>
+      <div style={{ fontSize: "40px", marginBottom: "15px" }}>📱 ➔ 🔄</div>
+      <h2 style={{ fontSize: "20px", margin: "0 0 10px 0" }}>Draai je scherm</h2>
+      <p style={{ fontSize: "14px", color: "#ccc", maxWidth: "300px" }}>
+        Voor de beste ervaring, draai je telefoon naar Landscape.
+      </p>
     </div>
   );
 }
@@ -110,19 +130,22 @@ function InfoPanel({ activeMesh }) {
   );
 }
 
-// --- D. Mobile Controls (Joystick + Touch Look) ---
+// --- D. Mobile Controls (AANGEPAST: Anti-Scroll & Anti-Zoom) ---
 function MobileControls({ joystickRef, lookRef, onInteract }) {
-  // Joystick Logic
+  // --- 1. JOYSTICK LOGICA (Links) ---
   const stickRef = useRef();
   const baseRef = useRef();
   
   const handleStickStart = (e) => {
+    // preventDefault stopt browser zoom/scroll gedrag
+    // (Let op: in React 18+ kan dit soms warnings geven in console, maar is nodig voor iOS webgames)
     onInteract();
-    // Basis logica voor joystick start...
   };
 
   const handleStickMove = (e) => {
+    if(e.cancelable) e.preventDefault(); // CRUCIAAL: Stopt scrollen
     onInteract();
+
     const touch = e.targetTouches[0];
     const baseRect = baseRef.current.getBoundingClientRect();
     const centerX = baseRect.left + baseRect.width / 2;
@@ -144,24 +167,26 @@ function MobileControls({ joystickRef, lookRef, onInteract }) {
     stickRef.current.style.transform = `translate(${dx}px, ${dy}px)`;
 
     // Data update (Normalized -1 to 1)
-    // Invert DY because up on screen is negative Y
     joystickRef.current = { x: dx / maxDist, y: -(dy / maxDist) };
   };
 
-  const handleStickEnd = () => {
+  const handleStickEnd = (e) => {
+    if(e.cancelable) e.preventDefault();
     stickRef.current.style.transform = `translate(0px, 0px)`;
     joystickRef.current = { x: 0, y: 0 };
   };
 
-  // Touch Look Logic (Rechterkant scherm)
+  // --- 2. TOUCH LOOK LOGICA (Rechts) ---
   const lastTouch = useRef({ x: 0, y: 0 });
 
   const handleLookStart = (e) => {
+    if(e.cancelable) e.preventDefault(); // Stopt selecteren/zoomen
     onInteract();
     lastTouch.current = { x: e.targetTouches[0].clientX, y: e.targetTouches[0].clientY };
   };
 
   const handleLookMove = (e) => {
+    if(e.cancelable) e.preventDefault(); // CRUCIAAL: Stopt "back swipe" en refresh
     onInteract();
     const x = e.targetTouches[0].clientX;
     const y = e.targetTouches[0].clientY;
@@ -172,13 +197,24 @@ function MobileControls({ joystickRef, lookRef, onInteract }) {
     lookRef.current = { x: deltaX, y: deltaY };
     lastTouch.current = { x, y };
   };
+  
+  const handleLookEnd = (e) => {
+    if(e.cancelable) e.preventDefault();
+    lookRef.current = { x: 0, y: 0 };
+  };
 
   return (
     <>
       {/* LINKER KANT: Joystick Zone */}
-      <div style={{ position: 'fixed', bottom: 40, left: 40, width: 120, height: 120, zIndex: 50 }}>
+      {/* Iets hoger gezet (bottom: 60) om weg te blijven van de home bar */}
+      <div style={{ 
+          position: 'fixed', bottom: 60, left: 40, width: 120, height: 120, zIndex: 50,
+          touchAction: 'none' // Vertel browser: doe niets met touch hier
+      }}>
          <div ref={baseRef} 
-              onTouchStart={handleStickStart} onTouchMove={handleStickMove} onTouchEnd={handleStickEnd}
+              onTouchStart={handleStickStart} 
+              onTouchMove={handleStickMove} 
+              onTouchEnd={handleStickEnd}
               style={{ width: '100%', height: '100%', background: 'rgba(255,255,255,0.1)', borderRadius: '50%', position: 'relative', border: '2px solid rgba(255,255,255,0.3)' }}>
             <div ref={stickRef} style={{ 
                 width: 50, height: 50, background: 'rgba(255, 174, 0, 0.8)', borderRadius: '50%', 
@@ -187,13 +223,15 @@ function MobileControls({ joystickRef, lookRef, onInteract }) {
          </div>
       </div>
 
-      {/* RECHTER KANT: Look Zone (Onzichtbare overlay op rechter helft scherm) */}
+      {/* RECHTER KANT: Look Zone */}
       <div 
         onTouchStart={handleLookStart}
         onTouchMove={handleLookMove}
+        onTouchEnd={handleLookEnd}
         style={{ 
             position: 'fixed', top: 0, right: 0, width: '50vw', height: '100vh', 
-            zIndex: 49, /* Net onder UI */
+            zIndex: 49,
+            touchAction: 'none', // CRUCIAAL
             // background: 'rgba(0,255,0,0.1)' // Zet aan om zone te zien voor debug
         }} 
       />
@@ -293,7 +331,7 @@ function CollisionDebug() { return null; }
 
 // =========================================
 // 4. MAIN APP
-// =========================================da
+// =========================================
 export default function App() {
   const gltf = useGLTF("/assets/museum24.glb");
   const scene = gltf.scene;
@@ -305,7 +343,7 @@ export default function App() {
   const [isPortrait, setIsPortrait] = useState(false);
   const [showInstructions, setShowInstructions] = useState(true);
   
-  // Refs voor Mobile Controls (worden doorgegeven aan Camera)
+  // Refs voor Mobile Controls
   const joystickRef = useRef({ x: 0, y: 0 });
   const lookRef = useRef({ x: 0, y: 0 });
   
@@ -313,28 +351,20 @@ export default function App() {
   const idleTimer = useRef(null);
 
   const resetIdleTimer = () => {
-    // Verberg overlay zodra er actie is
     setShowInstructions(false);
-    
-    // Reset de timer
     if (idleTimer.current) clearTimeout(idleTimer.current);
-    
-    // Zet nieuwe timer voor 10 seconden
     idleTimer.current = setTimeout(() => {
         setShowInstructions(true);
-    }, 10000); // 10000ms = 10s
+    }, 10000); 
   };
 
   useEffect(() => {
-    // Device Detection
     const checkLayout = () => {
       const width = window.innerWidth;
       const height = window.innerHeight;
-      // Simpele check: Mobiel/Tablet is vaak smaller dan 1024 of touch enabled
       const mobileCheck = width < 1024 || 'ontouchstart' in window;
       setIsMobile(mobileCheck);
       
-      // Check Portrait alleen relevant op mobile/tablet
       if (mobileCheck && height > width) {
         setIsPortrait(true);
       } else {
@@ -343,14 +373,16 @@ export default function App() {
     };
 
     window.addEventListener("resize", checkLayout);
-    checkLayout(); // Initieel
-    resetIdleTimer(); // Start de idle timer meteen
+    checkLayout(); 
+    resetIdleTimer(); 
 
     return () => window.removeEventListener("resize", checkLayout);
   }, []);
 
   return (
     <>
+      <GlobalStyles />
+
       {/* 1. De Overlays */}
       <RotateDeviceOverlay isVisible={isPortrait} />
       
@@ -370,7 +402,7 @@ export default function App() {
          />
       )}
 
-      {/* 3. Vizier puntje in midden */}
+      {/* 3. Vizier puntje in midden (alleen desktop) */}
       {!isMobile && (
          <div style={{ position: "fixed", top: "50%", left: "50%", width: 6, height: 6, background: "white", borderRadius: "50%", transform: "translate(-50%,-50%)", zIndex: 1000, pointerEvents: 'none', opacity: 0.5 }} />
       )}
@@ -378,8 +410,7 @@ export default function App() {
       {/* 4. 3D Scene */}
       <Canvas 
         camera={{ fov: 75 }} 
-        style={{ width: "100vw", height: "100vh", background: "#111" }}
-        // Belangrijk voor touch actions op canvas te voorkomen (scrollen etc)
+        style={{ width: "100vw", height: "100vh", background: "#111", touchAction: "none" }}
         onCreated={(state) => {
             state.gl.domElement.style.touchAction = "none";
         }}
@@ -388,7 +419,6 @@ export default function App() {
         <directionalLight position={[5, 10, 5]} intensity={1.5} />
 
         <Suspense fallback={null}>
-            {/* Geef refs en interact callback door aan camera */}
             <FPSCamera 
                 model={scene} 
                 joystickRef={joystickRef} 
