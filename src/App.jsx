@@ -293,9 +293,9 @@ function CollisionDebug() { return null; }
 
 // =========================================
 // 4. MAIN APP
-// =========================================
+// =========================================da
 export default function App() {
-  const gltf = useGLTF("/assets/museum6.glb");
+  const gltf = useGLTF("/assets/museum24.glb");
   const scene = gltf.scene;
   
   const [painting, setPainting] = useState(null);
