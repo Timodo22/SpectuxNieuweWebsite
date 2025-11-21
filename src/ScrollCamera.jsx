@@ -6,10 +6,13 @@ import * as THREE from "three";
 
 const SPEED = 3.0;
 const SENS = 0.002; // Muis gevoeligheid
-// AANGEPAST: Gevoeligheid verhoogd voor soepeler rondkijken op mobiel
-const TOUCH_LOOK_SENS = 0.010; 
+const TOUCH_LOOK_SENS = 0.010; // Touch gevoeligheid
 const HEIGHT = 1.7;
 const RADIUS = 0.5;
+
+// --- LOOP EFFECT INSTELLINGEN (HEAD BOB) ---
+const BOB_SPEED = 12;       // Frequentie van de stappen
+const BOB_AMPLITUDE = 0.06; // Hoe hoog het hoofd op en neer gaat
 
 export default function FPSCamera({ 
   model, 
@@ -25,6 +28,9 @@ export default function FPSCamera({
   const keys = useRef({});
   const colliderPos = useRef(new THREE.Vector3(...start));
   
+  // Timer voor het loop-effect
+  const bobTimer = useRef(0);
+
   const obstacles = useRef([]);
   const raycaster = useRef(new THREE.Raycaster());
 
@@ -43,7 +49,7 @@ export default function FPSCamera({
     obstacles.current = list;
   }, [model]);
 
-  // 2. Setup Mouse & Keyboard Controls
+  // 2. Controls Setup
   useEffect(() => {
     camera.position.set(0, 0, 0);
     pitch.current.add(camera);
@@ -103,7 +109,7 @@ export default function FPSCamera({
 
   // 4. Game Loop
   useFrame((_, delta) => {
-    // A. Touch Look Logic
+    // A. Touch Look
     if (lookRef && (lookRef.current.x !== 0 || lookRef.current.y !== 0)) {
         yaw.current.rotation.y -= lookRef.current.x * TOUCH_LOOK_SENS;
         pitch.current.rotation.x -= lookRef.current.y * TOUCH_LOOK_SENS;
@@ -118,13 +124,12 @@ export default function FPSCamera({
 
     const moveDir = new THREE.Vector3(0, 0, 0);
 
-    // C. Keyboard Input
+    // C. Inputs
     if (keys.current["KeyW"]) moveDir.add(forward);
     if (keys.current["KeyS"]) moveDir.sub(forward);
     if (keys.current["KeyA"]) moveDir.sub(right);
     if (keys.current["KeyD"]) moveDir.add(right);
 
-    // D. Joystick Input
     if (joystickRef && (joystickRef.current.x !== 0 || joystickRef.current.y !== 0)) {
         const jY = joystickRef.current.y; 
         const jX = joystickRef.current.x;
@@ -137,22 +142,35 @@ export default function FPSCamera({
         if (onActive) onActive();
     }
 
-    // E. Physics
+    // D. Physics & Head Bobbing
     if (moveDir.lengthSq() > 0) {
       const displacement = moveDir.normalize().multiplyScalar(SPEED * delta);
 
+      // 1. Bewegen X
       const dirX = new THREE.Vector3(displacement.x, 0, 0).normalize();
       if (Math.abs(displacement.x) > 0.001) {
          if (canMove(colliderPos.current, dirX)) colliderPos.current.x += displacement.x;
       }
 
+      // 2. Bewegen Z
       const dirZ = new THREE.Vector3(0, 0, displacement.z).normalize();
       if (Math.abs(displacement.z) > 0.001) {
          if (canMove(colliderPos.current, dirZ)) colliderPos.current.z += displacement.z;
       }
+
+      // 3. Head Bobbing (Simulatie van lopen)
+      bobTimer.current += delta * BOB_SPEED;
+      yaw.current.position.y = HEIGHT + Math.sin(bobTimer.current) * BOB_AMPLITUDE;
+
+    } else {
+      // Als je stilstaat, ga soepel terug naar normale hoogte
+      yaw.current.position.y = THREE.MathUtils.lerp(yaw.current.position.y, HEIGHT, 0.1);
+      bobTimer.current = 0; // Reset timer
     }
 
-    yaw.current.position.set(colliderPos.current.x, HEIGHT, colliderPos.current.z);
+    // Update de positie
+    yaw.current.position.x = colliderPos.current.x;
+    yaw.current.position.z = colliderPos.current.z;
   });
 
   return null;

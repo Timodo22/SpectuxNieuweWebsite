@@ -9,9 +9,14 @@ import FPSCamera from "./ScrollCamera";
 import AutoSpotLights from "./AutoSpotLights";
 
 // =========================================
-// KLEUR DEFINITIE (Roze/Paars)
+// KLEUR & GRADIENT DEFINITIES
 // =========================================
-const THEME_COLOR = "#FF00CC"; // rgb(255, 0, 204)
+// Gradient van Links naar Rechts (voor horizontale randen/glow)
+const GRADIENT_LR = "linear-gradient(to right, #333399, #ff00cc)";
+// Gradient van Boven naar Beneden (voor langwerpige verticale balken)
+const GRADIENT_TB = "linear-gradient(to bottom, #333399, #ff00cc)";
+
+const THEME_COLOR_SOLID = "#ff00cc"; // Back-up kleur voor schaduwen
 
 // =========================================
 // 0. GLOBALE STIJLEN
@@ -37,19 +42,24 @@ const GlobalStyles = () => (
 // 1. DATA
 // =========================================
 const PAINTING_DATA = {
-  "PaitingsInside_Painting.008": {
-    title: "Sport Loterij",
-    description: "Een gedetailleerde weergave van de website van de sport loterij.",
+  "PaitingsInside_Painting_0002": {
+    title: "TK Sports Academy",
+    description: "TK Sports Academy zocht een effectieve manier om hun sportkampen te promoten. Wij realiseerden een website met een slim aanmeldformulier dat direct bevestigingsmails verstuurt en alle inschrijvingen automatisch verwerkt in Excel. Volledige administratieve automatisering.",
     image: "/assets/sport_preview.jpg",
   },
   "PaitingsInside_Painting_0014": {
     title: "AVANT Logistics",
-    description: "De website van AVANT Logistics.",
+    description: "Voor AVANT Logistics ontwikkelde Spectux een stijlvolle maatwerk website én een geavanceerd Track & Trace portaal. Groothandels geven bestellingen door, waarna de koerier direct de optimale route en ritinformatie in het systeem ziet verschijnen.",
     image: "/assets/avant_preview.jpg",
   },
-  "PaitingsInside_Painting.001": {
-    title: "Interieur Design",
-    description: "Een zachte weergave van een interieur project.",
+  "PaitingsInside_Painting_0008": {
+    title: "Deurluifel.nl",
+    description: "Deurluifel.nl zocht een technische partner voor het totaalplaatje. Wij verzorgen de Shopify-ontwikkeling, beheren de Google Ads campagnes, automatiseren de e-mailmarketing en bouwen complexe API-koppelingen met externe leveranciers.",
+    image: "/assets/design_preview.jpg",
+  },
+    "PaitingsInside_Painting_0020": {
+    title: "Ontwerp Studio Anouk",
+    description: "Anouk combineert creativiteit met een passie voor stijl. Spectux vertaalde haar visie naar een digitaal portfolio waarin haar interieurdesigns perfect tot hun recht komen.",
     image: "/assets/design_preview.jpg",
   },
 };
@@ -61,28 +71,45 @@ const PAINTING_DATA = {
 // --- A. Instructie Overlay ---
 function InstructionOverlay({ isVisible, isMobile }) {
   return (
+    // WRAPPER DIV voor de Gradient Rand (Links naar Rechts)
     <div style={{
       position: "fixed", top: "20px", left: "50%", transform: "translateX(-50%)",
-      background: "rgba(0, 0, 0, 0.8)", color: "white", padding: "15px 25px",
-      borderRadius: "30px", textAlign: "center",
+      background: GRADIENT_LR, // De gradient rand
+      padding: "2px", // Dikte van de rand
+      borderRadius: "32px",
       opacity: isVisible ? 1 : 0, transition: "opacity 0.5s ease",
       pointerEvents: "none", zIndex: 20, width: isMobile ? "90%" : "auto",
-      border: `1px solid ${THEME_COLOR}`,
-      boxShadow: `0 0 10px ${THEME_COLOR}`
+      boxShadow: `0 0 15px ${THEME_COLOR_SOLID}40` // Lichte gloed
     }}>
-      <h3 style={{ margin: "0 0 5px 0", fontSize: "16px", color: THEME_COLOR, textTransform: "uppercase" }}>
-        Welkom in het Museum
-      </h3>
-      <p style={{ margin: 0, fontSize: "14px", lineHeight: "1.4" }}>
-        {isMobile 
-          ? <span>Links: <b>Lopen</b> &nbsp;|&nbsp; Rechts: <b>Rondkijken</b></span>
-          : "Gebruik W A S D om rond te lopen en je MUIS om rond te kijken."}
-      </p>
+      {/* INHOUD DIV (Zwarte achtergrond) */}
+      <div style={{
+        background: "rgba(0, 0, 0, 0.9)", 
+        color: "white", 
+        padding: "15px 25px",
+        borderRadius: "30px", 
+        textAlign: "center"
+      }}>
+        <h3 style={{ 
+          margin: "0 0 5px 0", 
+          fontSize: "16px", 
+          color: "white", // TITEL GEWOON WIT
+          textTransform: "uppercase",
+          fontWeight: "bold",
+          letterSpacing: "1px"
+        }}>
+          Welkom in het Spectux museum
+        </h3>
+        <p style={{ margin: 0, fontSize: "14px", lineHeight: "1.4", color: "#ccc" }}>
+          {isMobile 
+            ? <span>Links: <b>Lopen</b> &nbsp;|&nbsp; Rechts: <b>Rondkijken</b></span>
+            : "Gebruik W A S D om rond te lopen en je MUIS om rond te kijken."}
+        </p>
+      </div>
     </div>
   );
 }
 
-// --- B. Rotate Device Overlay (AANGEPAST) ---
+// --- B. Rotate Device Overlay ---
 function RotateDeviceOverlay({ isVisible }) {
   if (!isVisible) return null;
   return (
@@ -94,9 +121,10 @@ function RotateDeviceOverlay({ isVisible }) {
       textAlign: "center", padding: "20px",
       touchAction: "none"
     }}>
-      {/* LOGO PLACEHOLDER */}
+      {/* Logo met Gradient */}
       <div style={{ 
-          width: "80px", height: "80px", background: THEME_COLOR, 
+          width: "80px", height: "80px", 
+          background: GRADIENT_LR, // Gradient bol
           borderRadius: "50%", marginBottom: "20px", display: 'flex', 
           alignItems: 'center', justifyContent: 'center', fontSize: '30px', fontWeight: 'bold'
       }}>
@@ -104,7 +132,9 @@ function RotateDeviceOverlay({ isVisible }) {
       </div>
 
       <div style={{ fontSize: "50px", marginBottom: "15px", animation: "spin 4s infinite linear" }}>⟳</div>
-      <h2 style={{ fontSize: "24px", margin: "0 0 10px 0", color: THEME_COLOR }}>Draai je scherm</h2>
+      <h2 style={{ fontSize: "24px", margin: "0 0 10px 0", color: "white" }}>
+        Draai je scherm
+      </h2>
       <p style={{ fontSize: "16px", color: "#ccc", maxWidth: "300px", lineHeight: "1.5" }}>
         Deze ervaring werkt het beste in liggende modus (Landscape).
       </p>
@@ -116,7 +146,7 @@ function RotateDeviceOverlay({ isVisible }) {
   );
 }
 
-// --- C. Info Panel (AANGEPAST: Mobiel Vriendelijk) ---
+// --- C. Info Panel ---
 function InfoPanel({ activeMesh, isMobile }) {
   const paintingId = activeMesh ? activeMesh.userData.paintingId : null;
   const data = paintingId ? PAINTING_DATA[paintingId] : null;
@@ -129,7 +159,6 @@ function InfoPanel({ activeMesh, isMobile }) {
   
   const visible = !!activeMesh;
 
-  // Mobiele layout aanpassingen
   const containerStyle = isMobile ? {
      flexDirection: "column",
      width: "90%",
@@ -161,22 +190,35 @@ function InfoPanel({ activeMesh, isMobile }) {
         width: containerStyle.width
       }}>
         
-        {/* TEKST DEEL */}
+        {/* TEKST CONTAINER */}
         <div style={{
-          background: "rgba(10, 10, 10, 0.95)", color: "white", padding: "20px",
-          borderRadius: isMobile ? "0 0 15px 15px" : "15px 0 0 15px", 
-          width: isMobile ? "100%" : "320px", 
-          borderLeft: isMobile ? "none" : `4px solid ${THEME_COLOR}`,
-          borderTop: isMobile ? `4px solid ${THEME_COLOR}` : "none",
-          boxSizing: 'border-box',
-          order: isMobile ? 2 : 1 // Op mobiel tekst onder afbeelding
+           display: 'flex', 
+           flexDirection: isMobile ? 'column' : 'row', // Op desktop gradient links, mobiel boven
+           background: "rgba(10, 10, 10, 0.95)", 
+           borderRadius: isMobile ? "0 0 15px 15px" : "15px 0 0 15px",
+           width: isMobile ? "100%" : "320px",
+           overflow: 'hidden', // Zorgt dat gradient netjes in de ronding blijft
+           order: isMobile ? 2 : 1
         }}>
-          <h2 style={{ margin: "0 0 8px 0", fontSize: isMobile ? "18px" : "22px", fontWeight: "bold", color: THEME_COLOR }}>
-            {content.title}
-          </h2>
-          <p style={{ margin: 0, fontSize: "13px", lineHeight: "1.5", color: "#ddd" }}>
-            {content.description}
-          </p>
+            {/* DE GRADIENT BALK (Het "Langwerpige") */}
+            <div style={{
+                width: isMobile ? "100%" : "6px", // Dunner op desktop, breed op mobiel
+                height: isMobile ? "6px" : "auto",
+                background: isMobile ? GRADIENT_LR : GRADIENT_TB, // Desktop: Boven-Beneden, Mobiel: Links-Rechts
+                flexShrink: 0
+            }} />
+
+            <div style={{ padding: "20px", boxSizing: 'border-box' }}>
+              <h2 style={{ 
+                margin: "0 0 8px 0", fontSize: isMobile ? "18px" : "22px", fontWeight: "bold", 
+                color: "white" // TITEL WIT
+              }}>
+                {content.title}
+              </h2>
+              <p style={{ margin: 0, fontSize: "13px", lineHeight: "1.5", color: "#ddd" }}>
+                {content.description}
+              </p>
+            </div>
         </div>
 
         {/* AFBEELDING DEEL */}
@@ -200,9 +242,8 @@ function InfoPanel({ activeMesh, isMobile }) {
   );
 }
 
-// --- D. Mobile Controls (AANGEPAST: Visuele Indicator Rechts) ---
+// --- D. Mobile Controls ---
 function MobileControls({ joystickRef, lookRef, onInteract }) {
-  // 1. JOYSTICK LOGICA (Links)
   const stickRef = useRef();
   const baseRef = useRef();
   
@@ -235,7 +276,7 @@ function MobileControls({ joystickRef, lookRef, onInteract }) {
     joystickRef.current = { x: 0, y: 0 };
   };
 
-  // 2. TOUCH LOOK LOGICA (Rechts)
+  // LOOK LOGICA
   const lastTouch = useRef({ x: 0, y: 0 });
   const handleLookStart = (e) => {
     if(e.cancelable) e.preventDefault();
@@ -259,7 +300,7 @@ function MobileControls({ joystickRef, lookRef, onInteract }) {
 
   return (
     <>
-      {/* LINKER KANT: Joystick Zone */}
+      {/* JOYSTICK (Links) */}
       <div style={{ 
           position: 'fixed', bottom: 50, left: 40, width: 120, height: 120, zIndex: 50, touchAction: 'none' 
       }}>
@@ -272,15 +313,16 @@ function MobileControls({ joystickRef, lookRef, onInteract }) {
                   borderRadius: '50%', position: 'relative', border: '2px solid rgba(255,255,255,0.3)' 
               }}>
             <div ref={stickRef} style={{ 
-                width: 50, height: 50, background: THEME_COLOR, borderRadius: '50%', opacity: 0.8,
+                width: 50, height: 50, 
+                background: GRADIENT_LR, // Gradient Bal
+                borderRadius: '50%', opacity: 0.9,
                 position: 'absolute', top: '50%', left: '50%', marginTop: -25, marginLeft: -25, pointerEvents: 'none',
-                boxShadow: `0 0 15px ${THEME_COLOR}`
+                boxShadow: `0 0 15px ${THEME_COLOR_SOLID}`
             }} />
          </div>
       </div>
 
-      {/* RECHTER KANT: Look Visual Indicator + Zone */}
-      {/* De Indicator (Het Oogje) */}
+      {/* KIJKEN INDICATOR (Rechts) */}
       <div style={{
           position: 'fixed', bottom: 85, right: 75, zIndex: 48, pointerEvents: 'none', opacity: 0.6,
           display: 'flex', flexDirection: 'column', alignItems: 'center'
@@ -290,13 +332,11 @@ function MobileControls({ joystickRef, lookRef, onInteract }) {
               display: 'flex', alignItems: 'center', justifyContent: 'center',
               background: 'rgba(0,0,0,0.3)'
           }}>
-            {/* Simpel oog icoontje in CSS */}
-            <div style={{ width: 20, height: 20, background: THEME_COLOR, borderRadius: '50%' }} />
+            <div style={{ width: 20, height: 20, background: GRADIENT_LR, borderRadius: '50%' }} />
           </div>
           <div style={{ color: 'white', fontSize: '10px', marginTop: '5px', textTransform: 'uppercase', letterSpacing: '1px' }}>Kijken</div>
       </div>
 
-      {/* De Onzichtbare Zone over de hele rechterkant */}
       <div 
         onTouchStart={handleLookStart}
         onTouchMove={handleLookMove}
@@ -384,24 +424,20 @@ export default function App() {
   
   const [isMobile, setIsMobile] = useState(false);
   const [isPortrait, setIsPortrait] = useState(false);
-  // AANGEPAST: Start op false, komt na 5 seconden
   const [showInstructions, setShowInstructions] = useState(false);
   
   const joystickRef = useRef({ x: 0, y: 0 });
   const lookRef = useRef({ x: 0, y: 0 });
   const idleTimer = useRef(null);
 
-  // Timer Logic: Reset bij interactie, toon na 10s inactiviteit
   const resetIdleTimer = () => {
     if(showInstructions) setShowInstructions(false);
-    
     if (idleTimer.current) clearTimeout(idleTimer.current);
     idleTimer.current = setTimeout(() => {
         setShowInstructions(true);
     }, 10000); 
   };
 
-  // Initial Startup Timer (5 seconde vertraging voor eerste bericht)
   useEffect(() => {
       const startTimer = setTimeout(() => {
           setShowInstructions(true);
@@ -420,8 +456,6 @@ export default function App() {
 
     window.addEventListener("resize", checkLayout);
     checkLayout(); 
-    
-    // Start de idle timer loop
     resetIdleTimer(); 
 
     return () => window.removeEventListener("resize", checkLayout);
