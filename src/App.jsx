@@ -9,7 +9,12 @@ import FPSCamera from "./ScrollCamera";
 import AutoSpotLights from "./AutoSpotLights";
 
 // =========================================
-// 0. GLOBALE STIJLEN (Tegen stuiteren/zoomen)
+// KLEUR DEFINITIE (Roze/Paars)
+// =========================================
+const THEME_COLOR = "#FF00CC"; // rgb(255, 0, 204)
+
+// =========================================
+// 0. GLOBALE STIJLEN
 // =========================================
 const GlobalStyles = () => (
   <style>{`
@@ -19,10 +24,11 @@ const GlobalStyles = () => (
       width: 100%;
       height: 100%;
       overflow: hidden;
-      overscroll-behavior: none; /* Stopt pull-to-refresh op Chrome/Safari */
-      touch-action: none;        /* Stopt browser gestures */
-      user-select: none;         /* Stopt tekst selecteren */
+      overscroll-behavior: none;
+      touch-action: none;
+      user-select: none;
       -webkit-user-select: none;
+      font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
     }
   `}</style>
 );
@@ -57,44 +63,61 @@ function InstructionOverlay({ isVisible, isMobile }) {
   return (
     <div style={{
       position: "fixed", top: "20px", left: "50%", transform: "translateX(-50%)",
-      background: "rgba(0, 0, 0, 0.6)", color: "white", padding: "15px 25px",
-      borderRadius: "30px", fontFamily: "sans-serif", textAlign: "center",
+      background: "rgba(0, 0, 0, 0.8)", color: "white", padding: "15px 25px",
+      borderRadius: "30px", textAlign: "center",
       opacity: isVisible ? 1 : 0, transition: "opacity 0.5s ease",
-      pointerEvents: "none", zIndex: 20, width: isMobile ? "80%" : "auto",
-      touchAction: "none" // Belangrijk
+      pointerEvents: "none", zIndex: 20, width: isMobile ? "90%" : "auto",
+      border: `1px solid ${THEME_COLOR}`,
+      boxShadow: `0 0 10px ${THEME_COLOR}`
     }}>
-      <h3 style={{ margin: "0 0 5px 0", fontSize: "16px", color: "#ffae00" }}>Welkom in het Museum</h3>
-      <p style={{ margin: 0, fontSize: "14px" }}>
+      <h3 style={{ margin: "0 0 5px 0", fontSize: "16px", color: THEME_COLOR, textTransform: "uppercase" }}>
+        Welkom in het Museum
+      </h3>
+      <p style={{ margin: 0, fontSize: "14px", lineHeight: "1.4" }}>
         {isMobile 
-          ? "Gebruik de LINKER joystick om te lopen. Sleep RECHTS om te kijken."
+          ? <span>Links: <b>Lopen</b> &nbsp;|&nbsp; Rechts: <b>Rondkijken</b></span>
           : "Gebruik W A S D om rond te lopen en je MUIS om rond te kijken."}
       </p>
     </div>
   );
 }
 
-// --- B. Rotate Device Overlay (AANGEPAST: Kleiner) ---
+// --- B. Rotate Device Overlay (AANGEPAST) ---
 function RotateDeviceOverlay({ isVisible }) {
   if (!isVisible) return null;
   return (
     <div style={{
       position: "fixed", top: 0, left: 0, width: "100vw", height: "100vh",
-      background: "#111", color: "white", zIndex: 9999,
+      background: "linear-gradient(135deg, #000000 0%, #1a1a1a 100%)", 
+      color: "white", zIndex: 9999,
       display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center",
-      fontFamily: "sans-serif", textAlign: "center", padding: "20px",
-      touchAction: "none" // Blokkeer interacties hier ook
+      textAlign: "center", padding: "20px",
+      touchAction: "none"
     }}>
-      <div style={{ fontSize: "40px", marginBottom: "15px" }}>📱 ➔ 🔄</div>
-      <h2 style={{ fontSize: "20px", margin: "0 0 10px 0" }}>Draai je scherm</h2>
-      <p style={{ fontSize: "14px", color: "#ccc", maxWidth: "300px" }}>
-        Voor de beste ervaring, draai je telefoon naar Landscape.
+      {/* LOGO PLACEHOLDER */}
+      <div style={{ 
+          width: "80px", height: "80px", background: THEME_COLOR, 
+          borderRadius: "50%", marginBottom: "20px", display: 'flex', 
+          alignItems: 'center', justifyContent: 'center', fontSize: '30px', fontWeight: 'bold'
+      }}>
+        M
+      </div>
+
+      <div style={{ fontSize: "50px", marginBottom: "15px", animation: "spin 4s infinite linear" }}>⟳</div>
+      <h2 style={{ fontSize: "24px", margin: "0 0 10px 0", color: THEME_COLOR }}>Draai je scherm</h2>
+      <p style={{ fontSize: "16px", color: "#ccc", maxWidth: "300px", lineHeight: "1.5" }}>
+        Deze ervaring werkt het beste in liggende modus (Landscape).
       </p>
+      
+      <style>{`
+        @keyframes spin { 100% { transform: rotate(90deg); } }
+      `}</style>
     </div>
   );
 }
 
-// --- C. Info Panel (Schilderijen) ---
-function InfoPanel({ activeMesh }) {
+// --- C. Info Panel (AANGEPAST: Mobiel Vriendelijk) ---
+function InfoPanel({ activeMesh, isMobile }) {
   const paintingId = activeMesh ? activeMesh.userData.paintingId : null;
   const data = paintingId ? PAINTING_DATA[paintingId] : null;
   
@@ -106,67 +129,103 @@ function InfoPanel({ activeMesh }) {
   
   const visible = !!activeMesh;
 
+  // Mobiele layout aanpassingen
+  const containerStyle = isMobile ? {
+     flexDirection: "column",
+     width: "90%",
+     height: "auto",
+     maxHeight: "60vh",
+     bottom: "20px"
+  } : {
+     flexDirection: "row",
+     width: "auto",
+     height: "180px",
+     bottom: "50px"
+  };
+
   return (
-    <div style={styles.overlayContainer}>
+    <div style={{
+        position: "fixed", left: 0, width: "100%",
+        display: "flex", justifyContent: "center", alignItems: "flex-end",
+        zIndex: 10, pointerEvents: "none", 
+        bottom: containerStyle.bottom
+    }}>
       <div style={{ 
-        ...styles.panelWrapper, 
+        display: "flex", 
+        flexDirection: containerStyle.flexDirection,
+        alignItems: "stretch", 
         opacity: visible ? 1 : 0,
         transform: visible ? "translateY(0)" : "translateY(20px)",
-        pointerEvents: visible ? "auto" : "none"
+        transition: "all 0.5s cubic-bezier(0.25, 0.8, 0.25, 1)",
+        pointerEvents: visible ? "auto" : "none",
+        width: containerStyle.width
       }}>
-        <div style={styles.textCard}>
-          <h2 style={styles.title}>{content.title}</h2>
-          <p style={styles.desc}>{content.description}</p>
-        </div>
+        
+        {/* TEKST DEEL */}
         <div style={{
-           ...styles.imageCard,
-           transform: visible ? "translateX(0)" : "translateX(-100%)",
-           opacity: visible ? 1 : 0,
+          background: "rgba(10, 10, 10, 0.95)", color: "white", padding: "20px",
+          borderRadius: isMobile ? "0 0 15px 15px" : "15px 0 0 15px", 
+          width: isMobile ? "100%" : "320px", 
+          borderLeft: isMobile ? "none" : `4px solid ${THEME_COLOR}`,
+          borderTop: isMobile ? `4px solid ${THEME_COLOR}` : "none",
+          boxSizing: 'border-box',
+          order: isMobile ? 2 : 1 // Op mobiel tekst onder afbeelding
         }}>
-          {content.image && <img src={content.image} alt="Art" style={styles.img} />}
+          <h2 style={{ margin: "0 0 8px 0", fontSize: isMobile ? "18px" : "22px", fontWeight: "bold", color: THEME_COLOR }}>
+            {content.title}
+          </h2>
+          <p style={{ margin: 0, fontSize: "13px", lineHeight: "1.5", color: "#ddd" }}>
+            {content.description}
+          </p>
         </div>
+
+        {/* AFBEELDING DEEL */}
+        <div style={{
+           background: "rgba(255, 255, 255, 0.1)", padding: "5px", 
+           borderRadius: isMobile ? "15px 15px 0 0" : "0 15px 15px 0",
+           width: isMobile ? "100%" : "260px",
+           height: isMobile ? "150px" : "auto",
+           boxSizing: 'border-box',
+           display: "flex", 
+           order: isMobile ? 1 : 2,
+           overflow: "hidden"
+        }}>
+          {content.image && <img src={content.image} alt="Art" style={{ 
+              width: "100%", height: "100%", objectFit: "cover", borderRadius: "10px" 
+          }} />}
+        </div>
+
       </div>
     </div>
   );
 }
 
-// --- D. Mobile Controls (AANGEPAST: Anti-Scroll & Anti-Zoom) ---
+// --- D. Mobile Controls (AANGEPAST: Visuele Indicator Rechts) ---
 function MobileControls({ joystickRef, lookRef, onInteract }) {
-  // --- 1. JOYSTICK LOGICA (Links) ---
+  // 1. JOYSTICK LOGICA (Links)
   const stickRef = useRef();
   const baseRef = useRef();
   
-  const handleStickStart = (e) => {
-    // preventDefault stopt browser zoom/scroll gedrag
-    // (Let op: in React 18+ kan dit soms warnings geven in console, maar is nodig voor iOS webgames)
-    onInteract();
-  };
-
+  const handleStickStart = (e) => { onInteract(); };
   const handleStickMove = (e) => {
-    if(e.cancelable) e.preventDefault(); // CRUCIAAL: Stopt scrollen
+    if(e.cancelable) e.preventDefault();
     onInteract();
 
     const touch = e.targetTouches[0];
     const baseRect = baseRef.current.getBoundingClientRect();
     const centerX = baseRect.left + baseRect.width / 2;
     const centerY = baseRect.top + baseRect.height / 2;
-
     const maxDist = baseRect.width / 2;
     
     let dx = touch.clientX - centerX;
     let dy = touch.clientY - centerY;
     const dist = Math.sqrt(dx*dx + dy*dy);
     
-    // Clamp
     if(dist > maxDist) {
         dx = (dx / dist) * maxDist;
         dy = (dy / dist) * maxDist;
     }
-
-    // Visual update
     stickRef.current.style.transform = `translate(${dx}px, ${dy}px)`;
-
-    // Data update (Normalized -1 to 1)
     joystickRef.current = { x: dx / maxDist, y: -(dy / maxDist) };
   };
 
@@ -176,25 +235,20 @@ function MobileControls({ joystickRef, lookRef, onInteract }) {
     joystickRef.current = { x: 0, y: 0 };
   };
 
-  // --- 2. TOUCH LOOK LOGICA (Rechts) ---
+  // 2. TOUCH LOOK LOGICA (Rechts)
   const lastTouch = useRef({ x: 0, y: 0 });
-
   const handleLookStart = (e) => {
-    if(e.cancelable) e.preventDefault(); // Stopt selecteren/zoomen
+    if(e.cancelable) e.preventDefault();
     onInteract();
     lastTouch.current = { x: e.targetTouches[0].clientX, y: e.targetTouches[0].clientY };
   };
 
   const handleLookMove = (e) => {
-    if(e.cancelable) e.preventDefault(); // CRUCIAAL: Stopt "back swipe" en refresh
+    if(e.cancelable) e.preventDefault();
     onInteract();
     const x = e.targetTouches[0].clientX;
     const y = e.targetTouches[0].clientY;
-    
-    const deltaX = x - lastTouch.current.x;
-    const deltaY = y - lastTouch.current.y;
-
-    lookRef.current = { x: deltaX, y: deltaY };
+    lookRef.current = { x: x - lastTouch.current.x, y: y - lastTouch.current.y };
     lastTouch.current = { x, y };
   };
   
@@ -206,69 +260,59 @@ function MobileControls({ joystickRef, lookRef, onInteract }) {
   return (
     <>
       {/* LINKER KANT: Joystick Zone */}
-      {/* Iets hoger gezet (bottom: 60) om weg te blijven van de home bar */}
       <div style={{ 
-          position: 'fixed', bottom: 60, left: 40, width: 120, height: 120, zIndex: 50,
-          touchAction: 'none' // Vertel browser: doe niets met touch hier
+          position: 'fixed', bottom: 50, left: 40, width: 120, height: 120, zIndex: 50, touchAction: 'none' 
       }}>
          <div ref={baseRef} 
               onTouchStart={handleStickStart} 
               onTouchMove={handleStickMove} 
               onTouchEnd={handleStickEnd}
-              style={{ width: '100%', height: '100%', background: 'rgba(255,255,255,0.1)', borderRadius: '50%', position: 'relative', border: '2px solid rgba(255,255,255,0.3)' }}>
+              style={{ 
+                  width: '100%', height: '100%', background: 'rgba(255,255,255,0.1)', 
+                  borderRadius: '50%', position: 'relative', border: '2px solid rgba(255,255,255,0.3)' 
+              }}>
             <div ref={stickRef} style={{ 
-                width: 50, height: 50, background: 'rgba(255, 174, 0, 0.8)', borderRadius: '50%', 
-                position: 'absolute', top: '50%', left: '50%', marginTop: -25, marginLeft: -25, pointerEvents: 'none'
+                width: 50, height: 50, background: THEME_COLOR, borderRadius: '50%', opacity: 0.8,
+                position: 'absolute', top: '50%', left: '50%', marginTop: -25, marginLeft: -25, pointerEvents: 'none',
+                boxShadow: `0 0 15px ${THEME_COLOR}`
             }} />
          </div>
       </div>
 
-      {/* RECHTER KANT: Look Zone */}
+      {/* RECHTER KANT: Look Visual Indicator + Zone */}
+      {/* De Indicator (Het Oogje) */}
+      <div style={{
+          position: 'fixed', bottom: 85, right: 75, zIndex: 48, pointerEvents: 'none', opacity: 0.6,
+          display: 'flex', flexDirection: 'column', alignItems: 'center'
+      }}>
+          <div style={{ 
+              width: 50, height: 50, border: '2px solid white', borderRadius: '50%', 
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              background: 'rgba(0,0,0,0.3)'
+          }}>
+            {/* Simpel oog icoontje in CSS */}
+            <div style={{ width: 20, height: 20, background: THEME_COLOR, borderRadius: '50%' }} />
+          </div>
+          <div style={{ color: 'white', fontSize: '10px', marginTop: '5px', textTransform: 'uppercase', letterSpacing: '1px' }}>Kijken</div>
+      </div>
+
+      {/* De Onzichtbare Zone over de hele rechterkant */}
       <div 
         onTouchStart={handleLookStart}
         onTouchMove={handleLookMove}
         onTouchEnd={handleLookEnd}
         style={{ 
             position: 'fixed', top: 0, right: 0, width: '50vw', height: '100vh', 
-            zIndex: 49,
-            touchAction: 'none', // CRUCIAAL
-            // background: 'rgba(0,255,0,0.1)' // Zet aan om zone te zien voor debug
+            zIndex: 49, touchAction: 'none'
         }} 
       />
     </>
   );
 }
 
-
-const styles = {
-  overlayContainer: {
-    position: "fixed", bottom: "50px", left: 0, width: "100%",
-    display: "flex", justifyContent: "center", alignItems: "flex-end",
-    zIndex: 10, pointerEvents: "none", 
-  },
-  panelWrapper: {
-    display: "flex", alignItems: "stretch", height: "180px",
-    transition: "all 0.5s cubic-bezier(0.25, 0.8, 0.25, 1)",
-  },
-  textCard: {
-    background: "rgba(10, 10, 10, 0.9)", color: "white", padding: "25px",
-    borderRadius: "12px 0 0 12px", width: "320px", borderLeft: "4px solid #ffae00",
-    zIndex: 2, display: "flex", flexDirection: "column", justifyContent: "center"
-  },
-  imageCard: {
-    background: "rgba(255, 255, 255, 0.1)", padding: "10px", borderRadius: "0 12px 12px 0",
-    width: "260px", zIndex: 1, display: "flex", position: "relative", overflow: "hidden",
-    transition: "all 0.6s cubic-bezier(0.34, 1.56, 0.64, 1)", transitionDelay: "0.1s", 
-  },
-  title: { margin: "0 0 10px 0", fontSize: "22px", fontFamily: "sans-serif", fontWeight: "bold" },
-  desc: { margin: 0, fontSize: "14px", lineHeight: "1.6", fontFamily: "sans-serif", color: "#ccc" },
-  img: { width: "100%", height: "100%", objectFit: "cover", borderRadius: "8px" },
-};
-
 // =========================================
 // 3. LOGICA HELPERS
 // =========================================
-
 function Museum({ scene }) {
   useEffect(() => {
     scene.traverse((obj) => {
@@ -338,25 +382,32 @@ export default function App() {
   
   const [painting, setPainting] = useState(null);
   
-  // State voor device & overlay
   const [isMobile, setIsMobile] = useState(false);
   const [isPortrait, setIsPortrait] = useState(false);
-  const [showInstructions, setShowInstructions] = useState(true);
+  // AANGEPAST: Start op false, komt na 5 seconden
+  const [showInstructions, setShowInstructions] = useState(false);
   
-  // Refs voor Mobile Controls
   const joystickRef = useRef({ x: 0, y: 0 });
   const lookRef = useRef({ x: 0, y: 0 });
-  
-  // Timer Logic
   const idleTimer = useRef(null);
 
+  // Timer Logic: Reset bij interactie, toon na 10s inactiviteit
   const resetIdleTimer = () => {
-    setShowInstructions(false);
+    if(showInstructions) setShowInstructions(false);
+    
     if (idleTimer.current) clearTimeout(idleTimer.current);
     idleTimer.current = setTimeout(() => {
         setShowInstructions(true);
     }, 10000); 
   };
+
+  // Initial Startup Timer (5 seconde vertraging voor eerste bericht)
+  useEffect(() => {
+      const startTimer = setTimeout(() => {
+          setShowInstructions(true);
+      }, 5000);
+      return () => clearTimeout(startTimer);
+  }, []);
 
   useEffect(() => {
     const checkLayout = () => {
@@ -364,16 +415,13 @@ export default function App() {
       const height = window.innerHeight;
       const mobileCheck = width < 1024 || 'ontouchstart' in window;
       setIsMobile(mobileCheck);
-      
-      if (mobileCheck && height > width) {
-        setIsPortrait(true);
-      } else {
-        setIsPortrait(false);
-      }
+      setIsPortrait(mobileCheck && height > width);
     };
 
     window.addEventListener("resize", checkLayout);
     checkLayout(); 
+    
+    // Start de idle timer loop
     resetIdleTimer(); 
 
     return () => window.removeEventListener("resize", checkLayout);
@@ -383,7 +431,6 @@ export default function App() {
     <>
       <GlobalStyles />
 
-      {/* 1. De Overlays */}
       <RotateDeviceOverlay isVisible={isPortrait} />
       
       <InstructionOverlay 
@@ -391,9 +438,8 @@ export default function App() {
         isMobile={isMobile} 
       />
       
-      <InfoPanel activeMesh={painting} />
+      <InfoPanel activeMesh={painting} isMobile={isMobile} />
 
-      {/* 2. Mobile Controls (Alleen als landscape + mobile) */}
       {isMobile && !isPortrait && (
          <MobileControls 
             joystickRef={joystickRef} 
@@ -402,12 +448,10 @@ export default function App() {
          />
       )}
 
-      {/* 3. Vizier puntje in midden (alleen desktop) */}
       {!isMobile && (
          <div style={{ position: "fixed", top: "50%", left: "50%", width: 6, height: 6, background: "white", borderRadius: "50%", transform: "translate(-50%,-50%)", zIndex: 1000, pointerEvents: 'none', opacity: 0.5 }} />
       )}
 
-      {/* 4. 3D Scene */}
       <Canvas 
         camera={{ fov: 75 }} 
         style={{ width: "100vw", height: "100vh", background: "#111", touchAction: "none" }}
@@ -425,11 +469,9 @@ export default function App() {
                 lookRef={lookRef}
                 onActive={resetIdleTimer} 
             />
-            
             <Museum scene={scene} />
             <AutoSpotLights scene={scene} />
             <CollisionDebug scene={scene} />
-            
             <LookAtPainting scene={scene} onChange={setPainting} />
         </Suspense>
       </Canvas>
